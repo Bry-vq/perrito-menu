@@ -16,6 +16,13 @@ type TCustomer = {
   address: string;
 };
 
+type TDeliveryType = "Domicilio" | "Recoge en tienda";
+type TBranch = "Libertadores" | "Torcoroma";
+
+const DELIVERY_TYPES: TDeliveryType[] = ["Domicilio", "Recoge en tienda"];
+const BRANCHES: TBranch[] = ["Libertadores", "Torcoroma"];
+
+
 // 📞 Número de WhatsApp del negocio (formato E.164 sin "+")
 const BUSINESS_NUMBER = "573224207925";
 
@@ -51,12 +58,7 @@ const cleanPhone = (s: string) => s.replace(/\D/g, "").slice(-10);
 export default function MainPage() {
   const [deliveryType, setDeliveryType] = useState<"Domicilio" | "Recoge en tienda">("Domicilio");
   const [deliveryBranch, setDeliveryBranch] = useState<"Libertadores" | "Torcoroma">("Libertadores");
-
-  const [customer, setCustomer] = useState<TCustomer>({
-    name: "",
-    phone: "",
-    address: "",
-  });
+  const [customer, setCustomer] = useState<TCustomer>({ name: "", phone: "", address: "" });
 
   const [sausages, setSausages] = useState<number | null>(null);
   const [withoutToppings, setWithoutToppings] = useState<string[]>([]);
@@ -64,7 +66,6 @@ export default function MainPage() {
   const [comment, setComment] = useState("");
 
   const [cart, setCart] = useState<TCartItem[]>([]);
-  const [cartBump, setCartBump] = useState(false);
   const cartRef = useRef<HTMLDivElement>(null);
 
   const total = useMemo(
@@ -74,21 +75,14 @@ export default function MainPage() {
 
   const requireFields = deliveryType === "Domicilio" || deliveryType === "Recoge en tienda";
 
-  const handleCartBump = () => {
-    setCartBump(true);
-    setTimeout(() => setCartBump(false), 400);
-  };
-
   const addPerrito = () => {
     if (!sausages) return;
     const opt = SAUSAGE_OPTIONS.find((o) => o.quantity === sausages);
     if (!opt) return;
 
     const descParts: string[] = [];
-    if (withoutToppings.length)
-      descParts.push(...withoutToppings.map((r) => `sin ${r.toLowerCase()}`));
-    if (withoutSauces.length)
-      descParts.push(...withoutSauces.map((s) => `sin ${s.toLowerCase()}`));
+    if (withoutToppings.length) descParts.push(...withoutToppings.map((r) => `sin ${r.toLowerCase()}`));
+    if (withoutSauces.length) descParts.push(...withoutSauces.map((s) => `sin ${s.toLowerCase()}`));
     if (comment.trim()) descParts.push(`nota: ${comment.trim()}`);
 
     const item: TCartItem = {
@@ -101,7 +95,7 @@ export default function MainPage() {
     };
 
     setCart((prev) => [...prev, item]);
-    handleCartBump();
+
     setSausages(null);
     setWithoutToppings([]);
     setWithoutSauces([]);
@@ -133,9 +127,7 @@ export default function MainPage() {
   const updateQty = (id: string, delta: number) => {
     setCart((prev) =>
       prev
-        .map((i) =>
-          i.id === id ? { ...i, quantity: i.quantity + delta } : i
-        )
+        .map((i) => (i.id === id ? { ...i, quantity: i.quantity + delta } : i))
         .filter((i) => i.quantity > 0)
     );
   };
@@ -149,11 +141,7 @@ export default function MainPage() {
     list: string[],
     setList: React.Dispatch<React.SetStateAction<string[]>>
   ) => {
-    setList(
-      list.includes(val)
-        ? list.filter((x) => x !== val)
-        : [...list, val]
-    );
+    setList(list.includes(val) ? list.filter((x) => x !== val) : [...list, val]);
   };
 
   const sendWhatsApp = () => {
@@ -197,9 +185,7 @@ export default function MainPage() {
     )}\n\n*Total:* $${fmt(total)}`;
 
     const message = `${head}${cliente}${direccion}${entrega}${body}`;
-    const url = `https://wa.me/${BUSINESS_NUMBER}?text=${encodeURIComponent(
-      message
-    )}`;
+    const url = `https://wa.me/${BUSINESS_NUMBER}?text=${encodeURIComponent(message)}`;
 
     const w = window.open(url, "_blank");
     if (!w) window.location.href = url;
@@ -207,8 +193,7 @@ export default function MainPage() {
 
   useEffect(() => {
     if (cart.length > 0) {
-      setCartBump(true);
-      const timer = setTimeout(() => setCartBump(false), 400);
+      const timer = setTimeout(() => {}, 400);
       return () => clearTimeout(timer);
     }
   }, [cart.length]);
@@ -253,7 +238,7 @@ export default function MainPage() {
             <div className="bg-white rounded-2xl shadow p-4 md:p-6 md:w-1/2 mb-4 md:mb-0">
               <h2 className="text-xl font-bold mb-3">🚚 Tipo de entrega</h2>
               <div className="flex flex-wrap gap-2">
-                {["Domicilio", "Recoge en tienda"].map((opt) => (
+                {DELIVERY_TYPES.map((opt) => (
                   <button
                     key={opt}
                     onClick={() => setDeliveryType(opt)}
@@ -272,7 +257,7 @@ export default function MainPage() {
             <div className="bg-white rounded-2xl shadow p-4 md:p-6 md:w-1/2">
               <h2 className="text-xl font-bold mb-3">📍 Sede</h2>
               <div className="flex flex-wrap gap-2">
-                {["Libertadores", "Torcoroma"].map((opt) => (
+                {BRANCHES.map((opt) => (
                   <button
                     key={opt}
                     onClick={() => setDeliveryBranch(opt)}
