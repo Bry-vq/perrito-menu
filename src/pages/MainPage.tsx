@@ -1,13 +1,25 @@
 import React, { useMemo, useState, useRef, useEffect } from "react";
 
-/**
- * Landing: Menu para armar carrito y enviar pedido por WhatsApp
- * - Sin dependencias extra (solo React + Tailwind)
- * - Cambia BUSINESS_NUMBER por tu número en formato E.164 (Colombia: 57XXXXXXXXXX, sin "+")
- */
+// ✅ Tipos
+type TCartItem = {
+  id: string;
+  type: "perrito" | "bebida" | "adicional";
+  name: string;
+  unitPrice: number;
+  quantity: number;
+  description: string;
+};
 
-const BUSINESS_NUMBER = "573224207925"; // <-- REEMPLAZA
+type TCustomer = {
+  name: string;
+  phone: string;
+  address: string;
+};
 
+// 📞 Número de WhatsApp del negocio (formato E.164 sin "+")
+const BUSINESS_NUMBER = "573224207925";
+
+// 🍖 Opciones de salchichas
 const SAUSAGE_OPTIONS = [
   { quantity: 2, price: 7500 },
   { quantity: 3, price: 8000 },
@@ -16,36 +28,42 @@ const SAUSAGE_OPTIONS = [
   { quantity: 6, price: 9500 },
 ];
 
+// 🌮 Ingredientes
 const RELLENO = ["Cebolla", "Papita", "Queso", "Huevo de codorniz"];
 const SALSAS = ["Mayonesa", "Mostaza", "Tomate", "Piña"];
 
+// 🥤 Bebidas
 const BEBIDAS = [
   { id: "b-agua300", name: "Agua 300ml", price: 2000 },
   { id: "b-coca400", name: "CocaCola Pet 400ml", price: 3500 },
   { id: "b-coca15", name: "CocaCola 1.5L", price: 7000 },
 ];
 
+// 🍮 Adicionales
 const ADICIONALES = [
   { id: "a-huevo", name: "Porción de huevo (5 codorniz)", price: 2000 },
 ];
 
-const fmt = (n) => new Intl.NumberFormat("es-CO").format(n);
-const cleanPhone = (s) => s.replace(/\D/g, "").slice(-10);
+// 💰 Formato moneda
+const fmt = (n: number) => new Intl.NumberFormat("es-CO").format(n);
+const cleanPhone = (s: string) => s.replace(/\D/g, "").slice(-10);
 
 export default function MainPage() {
-  // Cliente
-  const [deliveryType, setDeliveryType] = useState("Domicilio"); // "En sitio" | "Para llevar" | "Domicilio" | "Recoge en tienda"
-  const [deliveryBranch, setDeliveryBranch] = useState("Libertadores"); // "Libertadores" | "Torcoroma"
-  const [customer, setCustomer] = useState({ name: "", phone: "", address: "" });
+  const [deliveryType, setDeliveryType] = useState<"Domicilio" | "Recoge en tienda">("Domicilio");
+  const [deliveryBranch, setDeliveryBranch] = useState<"Libertadores" | "Torcoroma">("Libertadores");
 
-  // Builder de perrito
-  const [sausages, setSausages] = useState(null); // 2..6
-  const [withoutToppings, setWithoutToppings] = useState([]); // Relleno a quitar
-  const [withoutSauces, setWithoutSauces] = useState([]); // Salsas a quitar
+  const [customer, setCustomer] = useState<TCustomer>({
+    name: "",
+    phone: "",
+    address: "",
+  });
+
+  const [sausages, setSausages] = useState<number | null>(null);
+  const [withoutToppings, setWithoutToppings] = useState<string[]>([]);
+  const [withoutSauces, setWithoutSauces] = useState<string[]>([]);
   const [comment, setComment] = useState("");
 
-  // Carrito
-  const [cart, setCart] = useState([]); // {id, type, name, unitPrice, quantity, description}
+  const [cart, setCart] = useState<TCartItem[]>([]);
   const [cartBump, setCartBump] = useState(false);
   const cartRef = useRef<HTMLDivElement>(null);
 
@@ -66,12 +84,14 @@ export default function MainPage() {
     const opt = SAUSAGE_OPTIONS.find((o) => o.quantity === sausages);
     if (!opt) return;
 
-    const descParts = [];
-    if (withoutToppings.length) descParts.push(...withoutToppings.map((r) => `sin ${r.toLowerCase()}`));
-    if (withoutSauces.length) descParts.push(...withoutSauces.map((s) => `sin ${s.toLowerCase()}`));
+    const descParts: string[] = [];
+    if (withoutToppings.length)
+      descParts.push(...withoutToppings.map((r) => `sin ${r.toLowerCase()}`));
+    if (withoutSauces.length)
+      descParts.push(...withoutSauces.map((s) => `sin ${s.toLowerCase()}`));
     if (comment.trim()) descParts.push(`nota: ${comment.trim()}`);
 
-    const item = {
+    const item: TCartItem = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       type: "perrito",
       name: `Perrito ${sausages} salchichas`,
@@ -81,56 +101,63 @@ export default function MainPage() {
     };
 
     setCart((prev) => [...prev, item]);
-    handleCartBump(); // <-- aquí
-    // Reset del builder
+    handleCartBump();
     setSausages(null);
     setWithoutToppings([]);
     setWithoutSauces([]);
     setComment("");
   };
 
-  const addSimple = (prod, type) => {
+  const addSimple = (
+    prod: { id: string; name: string; price: number },
+    type: TCartItem["type"]
+  ) => {
     const idx = cart.findIndex((i) => i.type === type && i.name === prod.name);
     if (idx >= 0) {
       const clone = [...cart];
       clone[idx].quantity += 1;
       setCart(clone);
     } else {
-      setCart((prev) => [
-        ...prev,
-        {
-          id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-          type,
-          name: prod.name,
-          unitPrice: prod.price,
-          quantity: 1,
-          description: "",
-        },
-      ]);
+      const item: TCartItem = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        type,
+        name: prod.name,
+        unitPrice: prod.price,
+        quantity: 1,
+        description: "",
+      };
+      setCart((prev) => [...prev, item]);
     }
   };
 
-  const updateQty = (id, delta) => {
+  const updateQty = (id: string, delta: number) => {
     setCart((prev) =>
       prev
-        .map((i) => (i.id === id ? { ...i, quantity: i.quantity + delta } : i))
+        .map((i) =>
+          i.id === id ? { ...i, quantity: i.quantity + delta } : i
+        )
         .filter((i) => i.quantity > 0)
     );
   };
 
-  const removeItem = (id) => setCart((prev) => prev.filter((i) => i.id !== id));
+  const removeItem = (id: string) => setCart((prev) => prev.filter((i) => i.id !== id));
 
   const clearCart = () => setCart([]);
 
-  const toggleList = (val, list, setList) => {
-    setList(list.includes(val) ? list.filter((x) => x !== val) : [...list, val]);
+  const toggleList = (
+    val: string,
+    list: string[],
+    setList: React.Dispatch<React.SetStateAction<string[]>>
+  ) => {
+    setList(
+      list.includes(val)
+        ? list.filter((x) => x !== val)
+        : [...list, val]
+    );
   };
 
   const sendWhatsApp = () => {
-    if (!cart.length) {
-      alert("Tu carrito está vacío");
-      return;
-    }
+    if (!cart.length) return alert("Tu carrito está vacío");
 
     if (requireFields) {
       if (!customer.name.trim()) return alert("Ingresa el nombre del cliente");
@@ -141,19 +168,38 @@ export default function MainPage() {
 
     const phone10 = cleanPhone(customer.phone);
     const now = new Date();
-    const fecha = now.toLocaleString("es-CO", { dateStyle: "short", timeStyle: "short" });
+    const fecha = now.toLocaleString("es-CO", {
+      dateStyle: "short",
+      timeStyle: "short",
+    });
 
-    const lines = cart.map((i) => `• ${i.quantity} x ${i.name}${i.description ? ` (${i.description})` : ""} — $${fmt(i.unitPrice * i.quantity)}`);
+    const lines = cart.map(
+      (i) =>
+        `• ${i.quantity} x ${i.name}${
+          i.description ? ` (${i.description})` : ""
+        } — $${fmt(i.unitPrice * i.quantity)}`
+    );
 
     const head = `*Nuevo pedido - Perrito*\nFecha: ${fecha}`;
-    const cliente = customer.name || customer.phone ? `\n\n*Cliente:* ${customer.name || "-"}${phone10 ? ` (📱 ${phone10})` : ""}` : "";
-    const direccion = deliveryType === "Domicilio" && customer.address ? `\n*Dirección:* ${customer.address}` : "";
+    const cliente =
+      customer.name || customer.phone
+        ? `\n\n*Cliente:* ${customer.name || "-"}${
+            phone10 ? ` (📱 ${phone10})` : ""
+          }`
+        : "";
+    const direccion =
+      deliveryType === "Domicilio" && customer.address
+        ? `\n*Dirección:* ${customer.address}`
+        : "";
     const entrega = `\n*Entrega:* ${deliveryType}`;
-
-    const body = `\n\n*Pedido*\n${lines.join("\n")}\n\n*Total:* $${fmt(total)}`;
+    const body = `\n\n*Pedido*\n${lines.join(
+      "\n"
+    )}\n\n*Total:* $${fmt(total)}`;
 
     const message = `${head}${cliente}${direccion}${entrega}${body}`;
-    const url = `https://wa.me/${BUSINESS_NUMBER}?text=${encodeURIComponent(message)}`;
+    const url = `https://wa.me/${BUSINESS_NUMBER}?text=${encodeURIComponent(
+      message
+    )}`;
 
     const w = window.open(url, "_blank");
     if (!w) window.location.href = url;
