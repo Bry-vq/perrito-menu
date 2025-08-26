@@ -253,6 +253,7 @@ export default function MainPage() {
                 ))}
               </div>
             </div>
+            
             {/* Sede */}
             <div className="bg-white rounded-2xl shadow p-4 md:p-6 md:w-1/2">
               <h2 className="text-xl font-bold mb-3">📍 Sede</h2>
