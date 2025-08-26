@@ -23,9 +23,6 @@ const DELIVERY_TYPES: TDeliveryType[] = ["Domicilio", "Recoge en tienda"];
 const BRANCHES: TBranch[] = ["Libertadores", "Torcoroma"];
 
 
-// 📞 Número de WhatsApp del negocio (formato E.164 sin "+")
-const BUSINESS_NUMBER = "573224207925";
-
 // 🍖 Opciones de salchichas
 const SAUSAGE_OPTIONS = [
   { quantity: 2, price: 7500 },
