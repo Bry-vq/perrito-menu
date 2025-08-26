@@ -68,6 +68,9 @@ export default function MainPage() {
   const [cart, setCart] = useState<TCartItem[]>([]);
   const cartRef = useRef<HTMLDivElement>(null);
 
+  const [selectedSimpleItemId, setSelectedSimpleItemId] = useState<string | null>(null);
+
+
   const total = useMemo(
     () => cart.reduce((acc, i) => acc + i.unitPrice * i.quantity, 0),
     [cart]
@@ -102,26 +105,27 @@ export default function MainPage() {
     setComment("");
   };
 
-  const addSimple = (
-    prod: { id: string; name: string; price: number },
-    type: TCartItem["type"]
-  ) => {
-    const idx = cart.findIndex((i) => i.type === type && i.name === prod.name);
-    if (idx >= 0) {
-      const clone = [...cart];
-      clone[idx].quantity += 1;
-      setCart(clone);
-    } else {
-      const item: TCartItem = {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        type,
-        name: prod.name,
-        unitPrice: prod.price,
-        quantity: 1,
-        description: "",
-      };
-      setCart((prev) => [...prev, item]);
-    }
+  const addSimple = (prod: { id: string; name: string; price: number }, type: TCartItem["type"]) => {
+    setSelectedSimpleItemId(prod.id);
+    setTimeout(() => {
+      const idx = cart.findIndex((i) => i.type === type && i.name === prod.name);
+      if (idx >= 0) {
+        const clone = [...cart];
+        clone[idx].quantity += 1;
+        setCart(clone);
+      } else {
+        const item: TCartItem = {
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          type,
+          name: prod.name,
+          unitPrice: prod.price,
+          quantity: 1,
+          description: "",
+        };
+        setCart((prev) => [...prev, item]);
+      }
+      setSelectedSimpleItemId(null);
+    }, 150);
   };
 
   const updateQty = (id: string, delta: number) => {
@@ -161,6 +165,8 @@ export default function MainPage() {
       timeStyle: "short",
     });
 
+    const sedeInfo = `**${deliveryBranch.toUpperCase()}**`;
+
     const lines = cart.map(
       (i) =>
         `• ${i.quantity} x ${i.name}${
@@ -179,17 +185,24 @@ export default function MainPage() {
       deliveryType === "Domicilio" && customer.address
         ? `\n*Dirección:* ${customer.address}`
         : "";
-    const entrega = `\n*Entrega:* ${deliveryType}`;
-    const body = `\n\n*Pedido*\n${lines.join(
-      "\n"
-    )}\n\n*Total:* $${fmt(total)}`;
+
+    const entrega = `\n*Entrega:* ${deliveryType}\n*Sede:* ${sedeInfo}`;
+    const body = `\n\n*Pedido*\n${lines.join("\n")}\n\n*Total:* $${fmt(total)}`;
+
+    const sedeToNumberMap: Record<TBranch, string> = {
+      Libertadores: "573224207925",
+      Torcoroma: "573222849001",
+    };
+
+    const number = sedeToNumberMap[deliveryBranch] || "573224207925";
 
     const message = `${head}${cliente}${direccion}${entrega}${body}`;
-    const url = `https://wa.me/${BUSINESS_NUMBER}?text=${encodeURIComponent(message)}`;
+    const url = `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
 
     const w = window.open(url, "_blank");
     if (!w) window.location.href = url;
   };
+
 
   useEffect(() => {
     if (cart.length > 0) {
@@ -253,7 +266,7 @@ export default function MainPage() {
                 ))}
               </div>
             </div>
-            
+
             {/* Sede */}
             <div className="bg-white rounded-2xl shadow p-4 md:p-6 md:w-1/2">
               <h2 className="text-xl font-bold mb-3">📍 Sede</h2>
@@ -438,14 +451,16 @@ export default function MainPage() {
             <h2 className="text-xl font-bold mb-4">🥤 Bebidas</h2>
             <div className="flex flex-wrap gap-3">
               {BEBIDAS.map((b) => (
-                <button
+                <div
                   key={b.id}
                   onClick={() => addSimple(b, "bebida")}
-                  className="px-4 py-2 rounded-xl border bg-white hover:bg-gray-50 shadow text-left"
+                  className={`cursor-pointer border rounded-xl px-4 py-2 shadow-sm transition-colors duration-200 text-left ${
+                    selectedSimpleItemId === b.id ? "bg-emerald-100 border-emerald-600" : "bg-white hover:bg-gray-50"
+                  }`}
                 >
-                  <div className="font-semibold">{b.name}</div>
-                  <div className="text-sm text-gray-600">$ {fmt(b.price)}</div>
-                </button>
+                  <div className="font-semibold text-gray-800">{b.name}</div>
+                  <div className="text-sm text-gray-500">${fmt(b.price)}</div>
+                </div>
               ))}
             </div>
           </div>
@@ -455,14 +470,16 @@ export default function MainPage() {
             <h2 className="text-xl font-bold mb-4">🍮 Adicionales</h2>
             <div className="flex flex-wrap gap-3">
               {ADICIONALES.map((a) => (
-                <button
+                <div
                   key={a.id}
                   onClick={() => addSimple(a, "adicional")}
-                  className="px-4 py-2 rounded-xl border bg-white hover:bg-gray-50 shadow text-left"
+                  className={`cursor-pointer border rounded-xl px-4 py-2 shadow-sm transition-colors duration-200 text-left ${
+                    selectedSimpleItemId === a.id ? "bg-emerald-100 border-emerald-600" : "bg-white hover:bg-gray-50"
+                  }`}
                 >
-                  <div className="font-semibold">{a.name}</div>
-                  <div className="text-sm text-gray-600">$ {fmt(a.price)}</div>
-                </button>
+                  <div className="font-semibold text-gray-800">{a.name}</div>
+                  <div className="text-sm text-gray-500">${fmt(a.price)}</div>
+                </div>
               ))}
             </div>
           </div>
