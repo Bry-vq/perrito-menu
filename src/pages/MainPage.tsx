@@ -187,7 +187,7 @@ export default function MainPage() {
     const body = `\n\n*Pedido*\n${lines.join("\n")}\n\n*Total:* $${fmt(total)}`;
 
     const sedeToNumberMap: Record<TBranch, string> = {
-      Libertadores: "573224207925",
+      Libertadores: "573138772877",
       Torcoroma: "573222849001",
     };
 
